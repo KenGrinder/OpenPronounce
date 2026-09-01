@@ -30,6 +30,7 @@
     const PHONE_WRONG_THRESHOLD = 0.5;
     const COLORS = { you: '#ea580c', reference: '#2f6fb3', good: '#10b981', mid: '#f59e0b', bad: '#ef4444' };
     const LANG_STORAGE_KEY = 'openpronounce.lang';
+    const API_KEY_SESSION_KEY = 'openpronounce.api-key';
 
     const RECORD_ERRORS = {
         insecure: 'Recording needs a secure page (https or localhost). You can still upload a file.',
@@ -56,6 +57,7 @@
         chartsDirty: false,
         busy: false,
         loadingTimers: [],
+        apiKey: '',
     };
 
     let recorder;
@@ -68,6 +70,16 @@
     function init() {
         recorder = new AudioRecorder();
         viseme = new Viseme($('viseme-image'));
+        state.apiKey = sessionStorage.getItem(API_KEY_SESSION_KEY) || '';
+        $('api-key').value = state.apiKey;
+        $('api-key').addEventListener('input', (event) => {
+            state.apiKey = event.target.value;
+            if (state.apiKey) {
+                sessionStorage.setItem(API_KEY_SESSION_KEY, state.apiKey);
+            } else {
+                sessionStorage.removeItem(API_KEY_SESSION_KEY);
+            }
+        });
 
         loadLanguages();
         renderExamples();
@@ -116,7 +128,7 @@
 
     async function loadLanguages() {
         try {
-            const response = await fetch('/languages');
+            const response = await fetch('/api/v1/languages');
             if (!response.ok) {
                 return;
             }
@@ -302,6 +314,10 @@
 
     // ---------------------------------------------------------------- analysis
 
+    function apiHeaders(extra = {}) {
+        return state.apiKey ? { ...extra, 'X-API-Key': state.apiKey } : extra;
+    }
+
     async function analyze() {
         if (state.busy || !state.blob || !requireText()) {
             return;
@@ -317,15 +333,17 @@
         formData.append('lang', state.lang);
 
         try {
-            const response = await fetch('/pronunciation', { method: 'POST', body: formData });
+            const response = await fetch('/api/v1/pronunciation', {
+                method: 'POST',
+                headers: apiHeaders(),
+                body: formData,
+            });
             if (!response.ok) {
                 let detail = '';
                 try {
                     detail = (await response.json()).detail || '';
                 } catch (err) { /* not JSON */ }
-                throw new Error(response.status === 422 && detail
-                    ? detail
-                    : 'The server could not analyze this recording. Try again in a moment.');
+                throw new Error(detail || 'The server could not analyze this recording. Try again in a moment.');
             }
             const data = await response.json();
             if (!data || !data.differences) {
@@ -631,10 +649,11 @@
         label.textContent = 'Loading the reference';
 
         try {
-            const formData = new FormData();
-            formData.append('text', expectedText());
-            formData.append('lang', state.lang);
-            const response = await fetch('/tts', { method: 'POST', body: formData });
+            const response = await fetch('/api/v1/tts', {
+                method: 'POST',
+                headers: apiHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ text: expectedText(), lang: state.lang }),
+            });
             if (!response.ok) {
                 throw new Error('tts failed');
             }

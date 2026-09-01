@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>OpenPronounce</Name>
+  <Repository>ghcr.io/kengrinder/openpronounce:gpu</Repository>
+  <Registry>https://github.com/KenGrinder/OpenPronounce/pkgs/container/openpronounce</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/KenGrinder/OpenPronounce/issues</Support>
+  <Project>https://github.com/KenGrinder/OpenPronounce</Project>
+  <Overview>Self-hosted phoneme-level pronunciation assessment with a web UI and versioned REST API. This GPU template is tuned for an NVIDIA GTX 1080 Ti and persists downloaded speech models and Piper voices in appdata.</Overview>
+  <Category>Tools: MediaApp:Other</Category>
+  <WebUI>http://[IP]:[PORT:8000]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/KenGrinder/OpenPronounce/main/unraid/OpenPronounce.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/KenGrinder/OpenPronounce/main/static/assets/favicon.svg</Icon>
+  <ExtraParams>--runtime=nvidia --gpus=all --security-opt=no-new-privileges --cap-drop=ALL</ExtraParams>
+  <PostArgs/>
+  <CPUset/>
+  <Date>2026-09-01</Date>
+  <DonateText/>
+  <DonateLink/>
+  <Requires>The Unraid NVIDIA Driver plugin and a working NVIDIA container runtime are required. The first start downloads several gigabytes of models to appdata.</Requires>
+  <Config Name="Web/API Port" Target="8000" Default="8000" Mode="tcp" Description="Web UI, OpenAPI docs, and REST API port." Type="Port" Display="always" Required="true" Mask="false">8000</Config>
+  <Config Name="Persistent Configuration" Target="/config" Default="/mnt/user/appdata/openpronounce" Mode="rw" Description="Hugging Face models, Piper voices, and synthesized reference cache." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/openpronounce</Config>
+  <Config Name="API Key" Target="OPENPRONOUNCE_API_KEY" Default="" Mode="" Description="Optional shared secret. Clients may send X-API-Key or Authorization: Bearer. Recommended outside a trusted LAN." Type="Variable" Display="always" Required="false" Mask="true"></Config>
+  <Config Name="NVIDIA GPU" Target="NVIDIA_VISIBLE_DEVICES" Default="all" Mode="" Description="Use all, a GPU index such as 0, or a GPU UUID from nvidia-smi -L." Type="Variable" Display="always" Required="true" Mask="false">all</Config>
+  <Config Name="NVIDIA Driver Capabilities" Target="NVIDIA_DRIVER_CAPABILITIES" Default="compute,utility" Mode="" Description="Capabilities required for CUDA inference and GPU status." Type="Variable" Display="advanced" Required="true" Mask="false">compute,utility</Config>
+  <Config Name="Torch Device" Target="OPENPRONOUNCE_DEVICE" Default="cuda" Mode="" Description="cuda for the selected NVIDIA GPU; use cpu only with a CPU-compatible image." Type="Variable" Display="advanced" Required="true" Mask="false">cuda</Config>
+  <Config Name="Preload Models" Target="OPENPRONOUNCE_PRELOAD_MODELS" Default="1" Mode="" Description="Download and load the default English models in the background at startup." Type="Variable" Display="always" Required="true" Mask="false">1</Config>
+  <Config Name="Maximum Concurrent Analyses" Target="OPENPRONOUNCE_MAX_CONCURRENCY" Default="1" Mode="" Description="Keep at 1 for an 11 GB GTX 1080 Ti to avoid transient CUDA out-of-memory errors." Type="Variable" Display="advanced" Required="true" Mask="false">1</Config>
+  <Config Name="Maximum Upload MB" Target="OPENPRONOUNCE_MAX_UPLOAD_MB" Default="25" Mode="" Description="Reject larger audio uploads before decoding." Type="Variable" Display="advanced" Required="true" Mask="false">25</Config>
+  <Config Name="CORS Origins" Target="OPENPRONOUNCE_CORS_ORIGINS" Default="" Mode="" Description="Optional comma-separated browser origins. Leave blank unless a separate web app calls this API." Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="TTS Engine" Target="OPENPRONOUNCE_TTS" Default="piper" Mode="" Description="Piper runs locally after the first voice download." Type="Variable" Display="advanced" Required="true" Mask="false">piper</Config>
+  <Config Name="Piper Voice" Target="OPENPRONOUNCE_TTS_VOICE" Default="en_US-lessac-medium" Mode="" Description="Default offline reference voice. Change this with the language when needed." Type="Variable" Display="advanced" Required="false" Mask="false">en_US-lessac-medium</Config>
+</Container>

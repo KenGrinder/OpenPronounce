@@ -69,18 +69,26 @@ Every function takes `lang="en"`. Lower-level pieces are exposed too: `transcrib
 **Web app**
 
 ```bash
-docker run -p 8000:8000 $(docker build -q .)     # or: pip install -e ".[app]" && uvicorn server:app
+cp .env.example .env
+docker compose up -d --build                       # GTX 1080 Ti / NVIDIA GPU
+# or: pip install -e ".[app]" && uvicorn server:app
 ```
 
-Then open http://localhost:8000: record from the microphone or drop a file, pick the language, get the score and the words with their wrong sounds highlighted. Microphone access needs `https://` or `localhost`. GPU: `Dockerfile.gpu` and `OPENPRONOUNCE_DEVICE=cuda` (CUDA is picked automatically when available).
+Then open http://localhost:8000: record from the microphone or drop a file, pick the language, get the score and the words with their wrong sounds highlighted. Microphone access needs `https://` or `localhost`.
+
+The repository includes reusable CPU/GPU Dockerfiles, a GPU Compose stack, published-image automation, persistent model/voice caches, and an [Unraid template and deployment guide](docs/docker-unraid.md). The GPU image pins a Pascal-compatible CUDA build for the GTX 1080 Ti. Published tags are `ghcr.io/kengrinder/openpronounce:gpu` and `:cpu` after the container workflow has run.
+
+For apps and tools, use the versioned REST API and its OpenAPI schema at `/openapi.json` (interactive docs at `/docs`). Set `OPENPRONOUNCE_API_KEY` to protect compute endpoints; clients can send `X-API-Key` or `Authorization: Bearer`.
 
 | Endpoint | Form fields | Returns |
 |---|---|---|
-| `POST /pronunciation` | `file`, `expected_text`, `lang` (default `en`) | the full analysis below |
-| `POST /speech2text` | `file`, `lang` | `{"transcript": ...}` |
-| `POST /phonemes` | `text`, `lang` | `{"phonemes": [...], "words": [...]}` |
-| `POST /tts` | `text`, `lang` | reference pronunciation, 16 kHz wav |
-| `GET /languages`, `GET /health`, `GET /docs` | | registry, liveness, Swagger UI |
+| `POST /api/v1/pronunciation` | multipart: `file`, `expected_text`, `lang` | the full analysis below |
+| `POST /api/v1/speech-to-text` | multipart: `file`, `lang` | transcript and language |
+| `POST /api/v1/phonemes` | JSON: `text`, `lang` | phonemes and word mapping |
+| `POST /api/v1/tts` | JSON: `text`, `lang` | reference pronunciation, 16 kHz wav |
+| `GET /api/v1/languages`, `/health`, `/ready`, `/info` | | registry and operational state |
+
+The original unversioned form endpoints remain available for compatibility. See [Docker and Unraid deployment](docs/docker-unraid.md) for curl examples, authentication, CORS, first-run behavior, backups, and troubleshooting.
 
 **Notebook**: [open in Colab](https://colab.research.google.com/github/Halleck45/OpenPronounce/blob/main/OpenPronounce-demo.ipynb), no local setup.
 
@@ -118,6 +126,11 @@ The score is `0.3 × acoustic + 0.4 × (1 − phoneme error rate) + 0.3 × (1 �
 | `OPENPRONOUNCE_PHONEME_MODEL` | espeak model | `off` to skip the phone recognizer (word errors then come from the transcription, less precise) |
 | `OPENPRONOUNCE_CACHE_DIR` | system temp | where synthesized references are cached |
 | `HF_HOME` | `~/.cache/huggingface` | where the models live; `HF_HUB_OFFLINE=1` works once they are there |
+| `OPENPRONOUNCE_API_KEY` | empty | protect compute endpoints with `X-API-Key` or Bearer auth |
+| `OPENPRONOUNCE_CORS_ORIGINS` | empty | comma-separated browser origins allowed to call the API |
+| `OPENPRONOUNCE_PRELOAD_MODELS` | off | load the default models in the background at server startup |
+| `OPENPRONOUNCE_MAX_CONCURRENCY` | `1` | concurrent model jobs; keep at one for an 11 GB GTX 1080 Ti |
+| `OPENPRONOUNCE_MAX_UPLOAD_MB` | `25` | maximum audio upload size before decoding |
 
 ## Limitations
 

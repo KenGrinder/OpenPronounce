@@ -1,0 +1,47 @@
+name: openpronounce
+
+services:
+  openpronounce:
+    image: ${OPENPRONOUNCE_IMAGE:-ghcr.io/kengrinder/openpronounce:gpu}
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+    container_name: openpronounce
+    restart: unless-stopped
+    init: true
+    ports:
+      - "${OPENPRONOUNCE_PORT:-8000}:8000"
+    volumes:
+      - "${OPENPRONOUNCE_CONFIG_DIR:-./data}:/config"
+    environment:
+      PORT: "8000"
+      OPENPRONOUNCE_DEVICE: "cuda"
+      OPENPRONOUNCE_API_KEY: "${OPENPRONOUNCE_API_KEY:-}"
+      OPENPRONOUNCE_CORS_ORIGINS: "${OPENPRONOUNCE_CORS_ORIGINS:-}"
+      OPENPRONOUNCE_PRELOAD_MODELS: "${OPENPRONOUNCE_PRELOAD_MODELS:-1}"
+      OPENPRONOUNCE_MAX_CONCURRENCY: "${OPENPRONOUNCE_MAX_CONCURRENCY:-1}"
+      OPENPRONOUNCE_MAX_UPLOAD_MB: "${OPENPRONOUNCE_MAX_UPLOAD_MB:-25}"
+      OPENPRONOUNCE_TTS: "${OPENPRONOUNCE_TTS:-piper}"
+      OPENPRONOUNCE_TTS_VOICE: "${OPENPRONOUNCE_TTS_VOICE:-en_US-lessac-medium}"
+      NVIDIA_VISIBLE_DEVICES: "${NVIDIA_VISIBLE_DEVICES:-all}"
+      NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+      FORWARDED_ALLOW_IPS: "${FORWARDED_ALLOW_IPS:-127.0.0.1}"
+    gpus: all
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=1g,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    stop_grace_period: 30s
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3

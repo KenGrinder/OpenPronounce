@@ -88,7 +88,7 @@
             <img src="/static/assets/logo.svg" alt="" class="w-6 h-6">
             OpenPronounce
         </a>
-        <a href="https://github.com/Halleck45/OpenPronounce" target="_blank" rel="noopener"
+        <a href="https://github.com/KenGrinder/OpenPronounce" target="_blank" rel="noopener"
             class="inline-flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 transition-colors">
             <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path fill-rule="evenodd"
@@ -136,6 +136,17 @@
                 <span class="text-xs text-neutral-500 mr-1">Try:</span>
                 <!-- example chips are injected by ui.js -->
             </div>
+
+            <details class="mt-4 text-sm">
+                <summary class="cursor-pointer select-none text-neutral-500 hover:text-neutral-800">API connection</summary>
+                <div class="mt-2 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+                    <label for="api-key" class="block text-xs font-medium text-neutral-600">API key</label>
+                    <input id="api-key" type="password" autocomplete="new-password"
+                        placeholder="Only needed when authentication is enabled"
+                        class="mt-1 w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-accent-500/40 focus:border-accent-500">
+                    <p class="mt-1.5 text-xs text-neutral-500">Kept only for this browser tab and sent as <code>X-API-Key</code>.</p>
+                </div>
+            </details>
 
             <div id="text-hint" class="hidden mt-2 text-sm text-red-600" role="alert"></div>
 
