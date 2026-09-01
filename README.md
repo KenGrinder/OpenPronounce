@@ -141,7 +141,7 @@ The score is `0.3 × acoustic + 0.4 × (1 − phoneme error rate) + 0.3 × (1 �
 
 ## Roadmap
 
-- [ ] Hosted demo (the Docker image is ready, `scripts/sync_space.sh` pushes it to a Hugging Face Space)
+- [ ] Hosted demo (the `ghcr.io/kengrinder/openpronounce` images are published and ready to deploy)
 - [ ] Phonetic costs inside the alignment itself, to cut the remaining false alarms on short words
 - [ ] Human calibration for French, Spanish, German, Italian, Portuguese, Dutch
 - [x] PyPI package, offline TTS, per-phone confidence, other languages, benchmark, GPU
