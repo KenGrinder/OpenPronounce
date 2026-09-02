@@ -11,12 +11,19 @@ on:
 
 jobs:
   build:
+    # Only the repository that owns the PyPI trusted-publisher relationship can
+    # publish, and that is upstream (see the note above). A fork tagging v* wants
+    # a versioned container image, which container.yml already builds from the
+    # same tag -- it does not want three jobs failing against a trusted publisher
+    # bound to someone else's repository and a `pypi` environment it has never
+    # created. `publish` and `release` chain off this one, so both skip with it.
+    if: github.repository == 'Halleck45/OpenPronounce'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.ref }}
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Check that the ref is a tag matching pyproject version
@@ -27,7 +34,7 @@ jobs:
           version=$(python -c "import tomllib;print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
           test "v$version" = "$TAG" || { echo "tag $TAG != v$version"; exit 1; }
       - run: pip install build && python -m build
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: dist
           path: dist/
@@ -39,7 +46,7 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: dist
           path: dist/
@@ -51,11 +58,11 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: dist
           path: dist/
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           files: dist/*
