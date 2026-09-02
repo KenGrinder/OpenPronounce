@@ -41,7 +41,7 @@ RUN python -m pip install --upgrade pip setuptools wheel \
 
 COPY pyproject.toml README.md ./
 COPY openpronounce ./openpronounce
-RUN python -m pip install ".[app,tts-piper]"
+RUN python -m pip install ".[app,tts-piper,tts-kokoro]"
 
 COPY server.py ./
 COPY docker-entrypoint.sh ./
