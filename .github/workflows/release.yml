@@ -2,7 +2,13 @@ name: Release
 
 # Manual: Actions > Release > Run workflow, version "vX.Y.Z" (or: gh workflow run release.yml -f version=vX.Y.Z).
 # Bumps the version in pyproject.toml and openpronounce/__init__.py, commits, tags,
-# then dispatches publish.yml on the tag (PyPI upload + GitHub Release).
+# then dispatches publish.yml on the tag.
+#
+# The tag is the useful part in a fork: container.yml builds
+# ghcr.io/<owner>/openpronounce:X.Y.Z-cpu and -gpu from it, which is how you pin a
+# deployment to a release rather than to whatever main last pushed. publish.yml
+# only does its PyPI upload and GitHub Release in the repository that owns the
+# trusted-publisher relationship, and skips everywhere else.
 on:
   workflow_dispatch:
     inputs:
@@ -29,7 +35,7 @@ jobs:
           fi
           echo "tag=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
