@@ -26,6 +26,8 @@ services:
       NVIDIA_VISIBLE_DEVICES: "${NVIDIA_VISIBLE_DEVICES:-all}"
       NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
       FORWARDED_ALLOW_IPS: "${FORWARDED_ALLOW_IPS:-127.0.0.1}"
+      OPENPRONOUNCE_SSL: "${OPENPRONOUNCE_SSL:-off}"
+      OPENPRONOUNCE_SSL_HOSTS: "${OPENPRONOUNCE_SSL_HOSTS:-}"
     gpus: all
     read_only: true
     tmpfs:
@@ -40,7 +42,7 @@ services:
         - CMD
         - python
         - -c
-        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"
+        - "import os,ssl,urllib.request as r; tls=os.environ.get('OPENPRONOUNCE_SSL','off')!='off'; u=('https' if tls else 'http')+'://127.0.0.1:8000/health'; r.urlopen(u,timeout=3,context=ssl._create_unverified_context()) if tls else r.urlopen(u,timeout=3)"
       interval: 30s
       timeout: 5s
       start_period: 30s

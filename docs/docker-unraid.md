@@ -86,6 +86,64 @@ docker build --pull -f Dockerfile.gpu -t openpronounce:gpu .
 
 Change the Unraid template Repository field to `openpronounce:gpu` and disable automatic image updates for that local-only tag.
 
+## HTTPS and the browser microphone
+
+Browsers only expose `navigator.mediaDevices` in a **secure context**. `https://`
+qualifies and so does `http://localhost`, but `http://192.168.1.x:8000` does not,
+so the record button in the web UI reports `insecure` and never asks for the
+microphone. Uploading a file still works; only recording is affected.
+
+The REST API is unaffected — plain HTTP is fine for `POST /api/v1/pronunciation`.
+
+Three ways to get a secure context, cheapest first.
+
+**Browse over localhost.** Forward the port and the problem disappears with no
+configuration at all:
+
+```bash
+ssh -L 8000:localhost:8000 root@UNRAID-IP
+```
+
+Then open `http://localhost:8000`.
+
+**Tell one browser to trust the origin.** In Chrome, open
+`chrome://flags/#unsafely-treat-insecure-origin-as-secure`, add
+`http://UNRAID-IP:8000`, set it to Enabled and relaunch. Per browser, per
+machine, and a development convenience rather than a deployment.
+
+**Let the container serve HTTPS.** Set `OPENPRONOUNCE_SSL=selfsigned` and list
+every address a browser will use:
+
+```text
+OPENPRONOUNCE_SSL=selfsigned
+OPENPRONOUNCE_SSL_HOSTS=192.168.1.227,unraid.local
+```
+
+On first start the container mints a certificate into `/config/certs` and uvicorn
+serves TLS on the same port. The certificate persists in appdata, so it survives
+restarts and you only accept it once per device. `localhost` and `127.0.0.1` are
+always included; anything else you type in the address bar has to be listed, as
+Chrome rejects a certificate whose SAN does not name the host. Delete
+`/config/certs` and restart to reissue after changing the list.
+
+The certificate is self-signed, so every browser shows a warning the first time
+and you have to click through it. After that the origin counts as secure and the
+microphone works. Phones and tablets are the awkward case: Android in particular
+wants the certificate installed as a user CA before Chrome stops complaining.
+
+**If a tablet is the target device, use a real certificate instead.** Put the
+service behind SWAG or Nginx Proxy Manager on a hostname in a domain you control,
+issue a Let's Encrypt certificate over the DNS-01 challenge (which works fine for
+a host that is not reachable from the internet), point that at the container, and
+leave `OPENPRONOUNCE_SSL=off`. Set `FORWARDED_ALLOW_IPS` to the proxy's address so
+uvicorn honours its `X-Forwarded-*` headers.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `OPENPRONOUNCE_SSL` | `off` | `off`, `selfsigned`, or `on` to use a certificate you supply. |
+| `OPENPRONOUNCE_SSL_HOSTS` | empty | Comma-separated hostnames/IPs to name in a generated certificate. |
+| `OPENPRONOUNCE_SSL_DIR` | `/config/certs` | Where `server.crt` and `server.key` live. |
+
 ## API for apps and tools
 
 The stable integration surface is under `/api/v1`. Interactive Swagger documentation is at `/docs`, and the machine-readable OpenAPI schema is at `/openapi.json`. Audio endpoints accept `multipart/form-data`; text-only endpoints accept JSON.
