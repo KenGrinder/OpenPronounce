@@ -27,7 +27,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PORT=8000
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg espeak-ng libsndfile1 \
+    && apt-get install -y --no-install-recommends ffmpeg espeak-ng libsndfile1 openssl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -40,9 +40,11 @@ COPY openpronounce ./openpronounce
 RUN python -m pip install ".[app,tts-piper]"
 
 COPY server.py ./
+COPY docker-entrypoint.sh ./
 COPY templates ./templates
 COPY static ./static
 
+RUN chmod +x /app/docker-entrypoint.sh
 RUN mkdir -p /config/huggingface /config/cache /config/tts \
     && chown -R 99:100 /config /app
 
@@ -51,6 +53,6 @@ VOLUME ["/config"]
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)" || exit 1
+    CMD python -c "import os,ssl,urllib.request as r; tls=os.environ.get('OPENPRONOUNCE_SSL','off')!='off'; u=('https' if tls else 'http')+'://127.0.0.1:'+os.environ.get('PORT','8000')+'/health'; r.urlopen(u,timeout=3,context=ssl._create_unverified_context()) if tls else r.urlopen(u,timeout=3)" || exit 1
 
-CMD ["sh", "-c", "exec uvicorn server:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1 --proxy-headers --forwarded-allow-ips=${FORWARDED_ALLOW_IPS:-127.0.0.1}"]
+CMD ["/app/docker-entrypoint.sh"]
